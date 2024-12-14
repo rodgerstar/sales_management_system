@@ -17,6 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from main import views
+
 urlpatterns = [
+
+    path('', views.dashboard, name='dashboard'),
+    path('goods/distributed', views.distributed_goods, name='distributed_goods'),
+    path('goods', views.add_goods, name='add_goods'),
+    path('payments', views.payments, name='payments'),
+    path('balances', views.boys_balances, name='boys_balances'),
+    path('reports', views.boys_reports, name='boys_reports'),
     path('admin/', admin.site.urls),
 ]
