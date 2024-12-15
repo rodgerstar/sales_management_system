@@ -1,0 +1,56 @@
+{% extends 'master.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    <title>Add Agent</title>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow rounded-lg border-left-success">
+                    <div class="card-header bg-gradient-success text-white text-center">
+                        <h4 class="mb-0">Add Agent</h4>
+                    </div>
+                    <div class="card-body">
+                        <form action="{% url 'add_transaction' %}" method="POST">
+                            {% csrf_token %}
+                            <label for="agent">Select Agent:</label>
+                            <select id="agent" name="agent" required>
+                                {% for agent in agents %}
+                                    <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.payment_period_days }}
+                                        days payment period)
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <br>
+
+                            <label for="good">Select Good:</label>
+                            <select id="good" name="good" required>
+                                {% for good in goods %}
+                                    <option value="{{ good.id }}">{{ good.name }} - {{ good.quantity_in_stock }}g
+                                        available @ {{ good.price_per_g }}/g
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <br>
+
+                            <label for="quantity_disbursed">Quantity to Disburse (g):</label>
+                            <input type="number" id="quantity_disbursed" name="quantity_disbursed" step="0.1" min="0"
+                                   required>
+                            <br>
+
+                            <button type="submit">Transact</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+
+{% endblock %}

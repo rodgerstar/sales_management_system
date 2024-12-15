@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 
-from main.app_forms import AgentForm, GoodsForm
-from main.models import Agent
+from main.app_forms import AgentForm, GoodsForm, TransactionForm
+from main.models import Agent, Good
 
 
 # Create your views here.
@@ -10,7 +10,14 @@ def dashboard(request):
 
 
 def distributed_goods(request):
-    return None
+    if request.method == "POST":
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('agent')
+    else:
+        form = GoodsForm()
+    return render(request, 'transaction_form.html', {'form': form})
 
 
 def payments(request):
@@ -46,7 +53,7 @@ def add_agent(request):
         form = AgentForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('agents')
+            return redirect('agent')
     else:
         form = AgentForm()
     return render(request, 'agents_form.html', {'form': form})
@@ -57,4 +64,5 @@ def general_reports(request):
 
 
 def goods(request):
-    return render(request, 'goods.html')
+   data = Good.objects.all()
+   return render(request, 'goods.html', {'data': data})

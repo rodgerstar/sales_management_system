@@ -25,6 +25,7 @@
                         <th>Address</th>
                         <th>Agent No</th>
                         <th>Joining date</th>
+                        <th>Due Days</th>
                     </tr>
                     </thead>
                     <tfoot>
@@ -35,6 +36,7 @@
                         <th>Address</th>
                         <th>Agent No</th>
                         <th>Joining date</th>
+                        <th>Due Days</th>
                     </tr>
                     </tfoot>
                     <tbody>
@@ -46,6 +48,7 @@
                             <td>{{ d.address }}</td>
                             <td>{{d.agent_number}}</td>
                             <td>{{ d.created_at }}</td>
+                            <td>{{ d.payment_period_days}}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

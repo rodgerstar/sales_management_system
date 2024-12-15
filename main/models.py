@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import timedelta, datetime
 
 STATUS_CHOICES = [
     ('partial', 'Partial'),
@@ -14,6 +15,7 @@ class Agent(models.Model):
     phone = models.CharField(max_length=15, unique=True)
     agent_number = models.CharField(max_length=50, unique=True)
     address = models.CharField(max_length=255)
+    payment_period_days = models.IntegerField(default=30)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -29,13 +31,13 @@ class Agent(models.Model):
 
 class Good(models.Model):
     name = models.CharField(max_length=100)
-    price = models.IntegerField()
-    quantity = models.PositiveIntegerField()
+    price_per_g = models.FloatField()
+    quantity_in_stock = models.PositiveIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - ${self.price:.2f}"
+        return f"{self.name} - {self.quantity_in_stock}kg @ {self.price_per_g}/g"
 
     class Meta:
         verbose_name_plural = "Goods"
@@ -47,15 +49,40 @@ class Good(models.Model):
 class Transaction(models.Model):
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='transactions')
     good = models.ForeignKey(Good, on_delete=models.CASCADE, related_name='transactions')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
-    date_distributed = models.DateTimeField(auto_now_add=True)
-    expected_payment_date = models.DateTimeField()
-    amount_due = models.IntegerField()
+    quantity_disbursed = models.FloatField()
+    total_price = models.FloatField(editable=False)
+    due_date = models.DateTimeField(editable=False)
+    payment_status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='due')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Calculate total price
+        self.total_price = self.quantity_disbursed * self.good.price_per_kg
+
+        # Set due date based on the agent's payment period
+        if not self.due_date:
+            self.due_date = self.created_at + timedelta(days=self.agent.payment_period_days)
+
+        # Determine payment status
+        current_date = datetime.now()
+        if self.payment_status != 'paid':  # Only update if payment hasn't been marked as 'paid'
+            if current_date > self.due_date:
+                self.payment_status = 'late'
+            elif current_date <= self.due_date:
+                self.payment_status = 'due'
+
+        # Update stock
+        if self.good.quantity_in_stock >= self.quantity_disbursed:
+            self.good.quantity_in_stock -= self.quantity_disbursed
+            self.good.save()
+        else:
+            raise ValueError("Insufficient stock to fulfill this transaction.")
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Transaction {self.id}: {self.agent.name} - {self.good.name}"
+        return f"Transaction {self.id}: {self.agent.name} - {self.good.name} ({self.payment_status})"
 
     class Meta:
         verbose_name_plural = "Transactions"
@@ -65,18 +92,35 @@ class Transaction(models.Model):
 
 
 class Payment(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE, related_name='payments')
-    amount_paid = models.IntegerField()
-    payment_date = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='partial')
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='payments')
+    transaction = models.ForeignKey(
+        Transaction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='payments'
+    )  # Optional: Can associate payment with a specific transaction
+    amount_paid = models.FloatField()
+    date_paid = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # Update transaction status if linked and payment is sufficient
+        if self.transaction:
+            total_paid = sum(payment.amount_paid for payment in self.transaction.payments.all())
+            if total_paid >= self.transaction.total_price:
+                self.transaction.payment_status = 'paid'
+                self.transaction.save()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Payment {self.id}: {self.amount_paid} - {self.transaction}"
+        return f"Payment of {self.amount_paid} by {self.agent.name} on {self.date_paid}"
 
     class Meta:
         verbose_name_plural = "Payments"
         verbose_name = "Payment"
-        ordering = ['transaction', 'payment_date']
+        ordering = ['-date_paid']
         db_table = 'payments'
+
+
