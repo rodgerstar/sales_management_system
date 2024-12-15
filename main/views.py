@@ -13,13 +13,25 @@ def payments(request):
     return None
 
 
-def boys_balances(request):
+def agent_balances(request):
     return None
 
 
-def boys_reports(request):
+def agent_reports(request):
     return None
 
 
 def add_goods(request):
+    return None
+
+
+def agent(request):
+    return None
+
+
+def add_agent(request):
+    return None
+
+
+def general_reports(request):
     return None
