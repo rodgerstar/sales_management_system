@@ -1,5 +1,8 @@
 from django.shortcuts import render
 
+from main.app_forms import AgentForm, GoodsForm
+
+
 # Create your views here.
 def dashboard(request):
     return render(request,'dashboard.html')
@@ -22,7 +25,8 @@ def agent_reports(request):
 
 
 def add_goods(request):
-    return None
+    form = GoodsForm()
+    return render(request, 'goods_form.html', {'form': form})
 
 
 def agent(request):
@@ -30,7 +34,8 @@ def agent(request):
 
 
 def add_agent(request):
-    return None
+    form = AgentForm()
+    return render(request, 'agents_form.html', {'form': form})
 
 
 def general_reports(request):
