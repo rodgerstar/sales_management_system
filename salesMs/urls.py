@@ -23,7 +23,8 @@ urlpatterns = [
 
     path('', views.dashboard, name='dashboard'),
     path('goods/distributed', views.distributed_goods, name='distributed_goods'),
-    path('goods', views.add_goods, name='add_goods'),
+    path('add/goods', views.add_goods, name='add_goods'),
+    path('goods', views.goods, name='goods'),
     path('agent', views.agent, name='agent'),
     path('add/agent', views.add_agent, name='add_agent'),
     path('payments', views.payments, name='payments'),

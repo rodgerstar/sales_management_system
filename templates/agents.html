@@ -1,0 +1,65 @@
+{% extends 'master.html' %}
+{% load static %}
+
+{% block title %}
+    <title>Agents</title>
+{% endblock %}
+
+{% block extra_css %}
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="card border-0 shadow rounded-lg border-left-success">
+            <div class="card-header bg-gradient-success text-white text-center">
+                <h4 class="mb-0">Agents</h4>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone no</th>
+                        <th>Address</th>
+                        <th>Agent No</th>
+                        <th>Joining date</th>
+                    </tr>
+                    </thead>
+                    <tfoot>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone no</th>
+                        <th>Address</th>
+                        <th>Agent No</th>
+                        <th>Joining date</th>
+                    </tr>
+                    </tfoot>
+                    <tbody>
+                    {% for d in data %}
+                        <tr>
+                            <td>{{ d.name }}</td>
+                            <td>{{ d.email }}</td>
+                            <td>{{ d.phone }}</td>
+                            <td>{{ d.address }}</td>
+                            <td>{{d.agent_number}}</td>
+                            <td>{{ d.created_at }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+{% endblock %}

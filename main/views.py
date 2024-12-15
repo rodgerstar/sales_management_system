@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from main.app_forms import AgentForm, GoodsForm
+from main.models import Agent
 
 
 # Create your views here.
@@ -25,18 +26,35 @@ def agent_reports(request):
 
 
 def add_goods(request):
-    form = GoodsForm()
+    if request.method == "POST":
+        form = GoodsForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('goods')
+    else:
+        form = GoodsForm()
     return render(request, 'goods_form.html', {'form': form})
 
 
 def agent(request):
-    return None
+    data = Agent.objects.all()
+    return render(request, 'agents.html', {'data': data})
 
 
 def add_agent(request):
-    form = AgentForm()
+    if request.method == 'POST':
+        form = AgentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('agents')
+    else:
+        form = AgentForm()
     return render(request, 'agents_form.html', {'form': form})
 
 
 def general_reports(request):
     return None
+
+
+def goods(request):
+    return render(request, 'goods.html')
