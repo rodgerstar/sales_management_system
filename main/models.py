@@ -58,18 +58,18 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         # Calculate total price
-        self.total_price = self.quantity_disbursed * self.good.price_per_kg
+        self.total_price = self.quantity_disbursed * self.good.price_per_g
 
         # Set due date based on the agent's payment period
         if not self.due_date:
-            self.due_date = self.created_at + timedelta(days=self.agent.payment_period_days)
+            self.due_date = datetime.now() + timedelta(days=self.agent.payment_period_days)
 
         # Determine payment status
         current_date = datetime.now()
         if self.payment_status != 'paid':  # Only update if payment hasn't been marked as 'paid'
             if current_date > self.due_date:
                 self.payment_status = 'late'
-            elif current_date <= self.due_date:
+            else:
                 self.payment_status = 'due'
 
         # Update stock

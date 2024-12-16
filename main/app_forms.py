@@ -17,3 +17,4 @@ class TransactionForm(forms.ModelForm):
     class Meta:
         model = Transaction
         fields = ['agent', 'good', 'quantity_disbursed']
+

@@ -15,34 +15,35 @@
                         <h4 class="mb-0">Add Agent</h4>
                     </div>
                     <div class="card-body">
-                        <form action="{% url 'add_transaction' %}" method="POST">
+                        <form action="{% url 'distributed_goods' %}" method="POST">
                             {% csrf_token %}
                             <label for="agent">Select Agent:</label>
-                            <select id="agent" name="agent" required>
+                            <select id="agent" name="agent" class="form-control" required>
                                 {% for agent in agents %}
-                                    <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.payment_period_days }}
-                                        days payment period)
+                                    <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.payment_period_days }} days payment
+                                        period)
                                     </option>
                                 {% endfor %}
                             </select>
-                            <br>
 
                             <label for="good">Select Good:</label>
-                            <select id="good" name="good" required>
+                            <select id="good" name="good" class="form-control" required>
                                 {% for good in goods %}
                                     <option value="{{ good.id }}">{{ good.name }} - {{ good.quantity_in_stock }}g
-                                        available @ {{ good.price_per_g }}/g
+                                        available @ Ksh{{ good.price_per_g }}/g
                                     </option>
                                 {% endfor %}
                             </select>
-                            <br>
-
-                            <label for="quantity_disbursed">Quantity to Disburse (g):</label>
-                            <input type="number" id="quantity_disbursed" name="quantity_disbursed" step="0.1" min="0"
-                                   required>
-                            <br>
-
-                            <button type="submit">Transact</button>
+                            <div class="form-group">
+                                <label for="quantity_disbursed" class="form-label">Quantity to Disburse (g):</label>
+                                <input type="number" id="quantity_disbursed" name="quantity_disbursed" 
+                                       class="form-control" step="0.1" min="0" required>
+                            </div>
+                            
+                            <!-- Submit Button -->
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn btn-success btn-block">Transact</button>
+                            </div>
                         </form>
                     </div>
                 </div>

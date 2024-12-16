@@ -1,0 +1,81 @@
+{% extends 'master.html' %}
+{% load crispy_forms_filters %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    <title>Add Payments</title>
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow rounded-lg border-left-success">
+                    <div class="card-header bg-gradient-success text-white text-center">
+                        <h4 class="mb-0">Add Payments</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" class="needs-validation" novalidate>
+                            {% csrf_token %}
+                            
+                            <div class="form-group">
+                                <label for="agent" class="form-label">Agent</label>
+                                <select id="agent" name="agent" class="form-control" required>
+                                    {% for agent in agents %}
+                                        <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.agent_number }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="transaction" class="form-label">Transaction (optional)</label>
+                                <select id="transaction" name="transaction" class="form-control">
+                                    <option value="">-- General Payment --</option>
+                                    {% for transaction in transactions %}
+                                        <option value="{{ transaction.id }}">
+                                            Transaction {{ transaction.id }}: {{ transaction.good.name }}
+                                            (Due: {{ transaction.total_price }} | Status: {{ transaction.payment_status }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="amount_paid" class="form-label">Amount Paid</label>
+                                <input type="number" id="amount_paid" name="amount_paid" class="form-control" 
+                                       step="0.01" min="0" required>
+                            </div>
+                            
+                            <div class="form-group text-center">
+                                <button type="submit" class="btn btn-success btn-block">
+                                    Submit Payment
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        // Example JavaScript for validation (optional)
+        (function () {
+            'use strict';
+            window.addEventListener('load', function () {
+                var forms = document.getElementsByClassName('needs-validation');
+                Array.prototype.filter.call(forms, function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+    </script>
+{% endblock %}

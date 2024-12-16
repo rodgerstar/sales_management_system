@@ -26,6 +26,7 @@
                         <th>Agent No</th>
                         <th>Joining date</th>
                         <th>Due Days</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tfoot>
@@ -37,6 +38,7 @@
                         <th>Agent No</th>
                         <th>Joining date</th>
                         <th>Due Days</th>
+                        <th>Status</th>
                     </tr>
                     </tfoot>
                     <tbody>
@@ -49,6 +51,10 @@
                             <td>{{d.agent_number}}</td>
                             <td>{{ d.created_at }}</td>
                             <td>{{ d.payment_period_days}}</td>
+                            <td>
+                                <a href="{% url 'agent_details' agent_id=d.id %}"
+                                class="btn-info">View</a>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>

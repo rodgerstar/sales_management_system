@@ -22,6 +22,9 @@ from main import views
 urlpatterns = [
 
     path('', views.dashboard, name='dashboard'),
+
+    path('payment/', views.process_payment, name='process_payment'),
+    path('agent/<int:agent_id>/', views.agent_details, name='agent_details'),
     path('goods/distributed', views.distributed_goods, name='distributed_goods'),
     path('add/goods', views.add_goods, name='add_goods'),
     path('goods', views.goods, name='goods'),
