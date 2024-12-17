@@ -61,12 +61,13 @@
                         <tr>
                             <td>{{ payment.date_paid }}</td>
                             <td>{{ payment.amount_paid }}</td>
-                            <td>{{ payment.transaction.id}}</td>
+                            <td>{{ payment.transaction.id }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>
                 </table>
-
+                <button type="button" class="btn btn-success mt-3 float-right" onclick="window.history.back()">Back
+                </button>
             </div>
         </div>
     </div>
@@ -79,4 +80,7 @@
 
     <!-- Page level custom scripts -->
     <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+
+    
+
 {% endblock %}

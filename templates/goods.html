@@ -20,26 +20,29 @@
                     <thead>
                     <tr>
                         <th>Name</th>
-                        <th>Ksh Value(g)</th>
-                        <th>Quantity(g)</th>
+                        <th>Price per Gram (Ksh)</th>
+                        <th>Quantity in Stock (g)</th>
                         <th>Stocking Date</th>
+                        <th>Stock Status</th>
                     </tr>
                     </thead>
                     <tfoot>
                     <tr>
                         <th>Name</th>
-                        <th>Ksh Value(g)</th>
-                        <th>Quantity(g)</th>
+                        <th>Price per Gram (Ksh)</th>
+                        <th>Quantity in Stock (g)</th>
                         <th>Stocking Date</th>
+                        <th>Stock Status</th>
                     </tr>
                     </tfoot>
                     <tbody>
-                    {% for d in data %}
+                    {% for good in data %}
                         <tr>
-                            <td>{{ d.name }}</td>
-                            <td>{{ d.price_per_g }}</td>
-                            <td>{{ d.quantity_in_stock }}</td>
-                            <td>{{ d.created_at }}</td>
+                            <td>{{ good.name }}</td>
+                            <td>{{ good.price_per_g|floatformat:2 }}</td>
+                            <td>{{ good.quantity_in_stock }}</td>
+                            <td>{{ good.created_at|date:"d-m-Y" }}</td>
+                            <td>{{ good.stock_status }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

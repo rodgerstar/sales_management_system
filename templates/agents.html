@@ -48,12 +48,12 @@
                             <td>{{ d.email }}</td>
                             <td>{{ d.phone }}</td>
                             <td>{{ d.address }}</td>
-                            <td>{{d.agent_number}}</td>
+                            <td>{{ d.agent_number }}</td>
                             <td>{{ d.created_at }}</td>
-                            <td>{{ d.payment_period_days}}</td>
+                            <td>{{ d.payment_period_days }}</td>
                             <td>
-                                <a href="{% url 'agent_details' agent_id=d.id %}"
-                                class="btn-info">View</a>
+                                <a href="{% url 'agent_details' agent_id=d.id %}" class="btn btn-success">View</a>
+
                             </td>
                         </tr>
                     {% endfor %}

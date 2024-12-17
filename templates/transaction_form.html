@@ -12,7 +12,7 @@
             <div class="col-md-6 col-lg-5">
                 <div class="card border-0 shadow rounded-lg border-left-success">
                     <div class="card-header bg-gradient-success text-white text-center">
-                        <h4 class="mb-0">Add Agent</h4>
+                        <h4 class="mb-0">Disburse Goods</h4>
                     </div>
                     <div class="card-body">
                         <form action="{% url 'distributed_goods' %}" method="POST">
@@ -20,11 +20,12 @@
                             <label for="agent">Select Agent:</label>
                             <select id="agent" name="agent" class="form-control" required>
                                 {% for agent in agents %}
-                                    <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.payment_period_days }} days payment
-                                        period)
+                                    <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.payment_period_days }}
+                                        days payment period)
                                     </option>
                                 {% endfor %}
                             </select>
+
 
                             <label for="good">Select Good:</label>
                             <select id="good" name="good" class="form-control" required>
@@ -36,10 +37,10 @@
                             </select>
                             <div class="form-group">
                                 <label for="quantity_disbursed" class="form-label">Quantity to Disburse (g):</label>
-                                <input type="number" id="quantity_disbursed" name="quantity_disbursed" 
+                                <input type="number" id="quantity_disbursed" name="quantity_disbursed"
                                        class="form-control" step="0.1" min="0" required>
                             </div>
-                            
+
                             <!-- Submit Button -->
                             <div class="form-group text-center">
                                 <button type="submit" class="btn btn-success btn-block">Transact</button>
@@ -53,5 +54,9 @@
 {% endblock %}
 
 {% block extra_js %}
-
+    <script>
+        document.querySelector('form').onsubmit = function () {
+            this.querySelector('button[type="submit"]').disabled = true;
+        };
+    </script>
 {% endblock %}

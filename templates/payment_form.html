@@ -18,27 +18,33 @@
                         <form method="POST" class="needs-validation" novalidate>
                             {% csrf_token %}
                             
-                            <div class="form-group">
-                                <label for="agent" class="form-label">Agent</label>
-                                <select id="agent" name="agent" class="form-control" required>
-                                    {% for agent in agents %}
-                                        <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.agent_number }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                            {% if agents %}
+                                <div class="form-group">
+                                    <label for="agent" class="form-label">Agent</label>
+                                    <select id="agent" name="agent" class="form-control" required>
+                                        {% for agent in agents %}
+                                            <option value="{{ agent.id }}">{{ agent.name }} ({{ agent.agent_number }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
                             
-                            <div class="form-group">
-                                <label for="transaction" class="form-label">Transaction (optional)</label>
-                                <select id="transaction" name="transaction" class="form-control">
-                                    <option value="">-- General Payment --</option>
-                                    {% for transaction in transactions %}
-                                        <option value="{{ transaction.id }}">
-                                            Transaction {{ transaction.id }}: {{ transaction.good.name }}
-                                            (Due: {{ transaction.total_price }} | Status: {{ transaction.payment_status }})
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                            {% if transactions %}
+                                <div class="form-group">
+                                    <label for="transaction" class="form-label">Transaction (optional)</label>
+                                    <select id="transaction" name="transaction" class="form-control">
+                                        <option value="">-- General Payment --</option>
+                                        {% for transaction in transactions %}
+                                            {% if transaction.payment_status != 'paid' %}
+                                                <option value="{{ transaction.id }}">
+                                                    Transaction {{ transaction.id }}: {{ transaction.good.name }}
+                                                    ({{ transaction.quantity_disbursed }}g | Status: {{ transaction.payment_status }})
+                                                </option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            {% endif %}
 
                             <div class="form-group">
                                 <label for="amount_paid" class="form-label">Amount Paid</label>
