@@ -1,22 +1,13 @@
-from datetime import timedelta, datetime
-
 from django.contrib import messages
-from django.db.models import Sum
-from django.http import HttpResponse, HttpResponseBadRequest
 from django.shortcuts import render, redirect, get_object_or_404
-from django.utils.timezone import now
-
+from django.db.models import Sum
 from django.utils import timezone
-from datetime import datetime
-from django.db import transaction as db_transaction  # For atomic transactions
-from main.app_forms import AgentForm, GoodsForm, TransactionForm
+from main.app_forms import AgentForm, GoodsForm
 from .models import Agent, Transaction, Payment, Good
-
 
 # Create your views here.
 def dashboard(request):
     return render(request, 'dashboard.html')
-
 
 def process_payment(request):
     agents = Agent.objects.all()
@@ -28,32 +19,29 @@ def process_payment(request):
         amount_paid = float(request.POST.get('amount_paid'))
 
         try:
-            # Validate agent and transaction
             agent = Agent.objects.get(id=agent_id)
             transaction = Transaction.objects.get(id=transaction_id) if transaction_id else None
 
-            # Record the payment
+            # Record payment
             payment = Payment(agent=agent, transaction=transaction, amount_paid=amount_paid)
             payment.save()
 
-            # Update the transaction's payment status
+            # Update transaction's payment status
             if transaction:
                 total_paid = transaction.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
                 if total_paid >= transaction.total_price:
                     transaction.payment_status = 'paid'
                 else:
-                    # Use timezone-aware comparison
                     current_date = timezone.now()
-                    due_date = timezone.make_aware(transaction.due_date) if timezone.is_naive(
-                        transaction.due_date) else transaction.due_date
-                    transaction.payment_status = 'late' if current_date > due_date else 'due'
-
+                    transaction.payment_status = 'late' if current_date > transaction.due_date else 'due'
                 transaction.save()
 
-            # No stock adjustments here!
+            # Update agent balance
+            agent.update_agent_balance()
 
             messages.success(request, "Payment processed successfully!")
             return redirect('agent_details', agent_id=agent.id)
+
         except (Agent.DoesNotExist, Transaction.DoesNotExist):
             messages.error(request, "Agent or Transaction not found.")
         except ValueError:
@@ -63,48 +51,29 @@ def process_payment(request):
 
     return render(request, 'payment_form.html', {'agents': agents, 'transactions': transactions})
 
-
-def calculate_agent_balance(agent_id):
-    agent = Agent.objects.get(id=agent_id)
-
-    # Calculate total due (for transactions that are 'due' or 'late')
-    total_due = sum(
-        t.total_price for t in agent.transactions.filter(payment_status__in=['due', 'late'])
-    )
-
-    # Calculate total paid (for all payments associated with the agent)
-    total_paid = sum(
-        p.amount_paid for p in agent.payments.all()
-    )
-
-    # Return the balance (difference between total due and total paid)
-    return total_due - total_paid
-
-
 def agent_details(request, agent_id):
-    agent = Agent.objects.get(id=agent_id)
-    transactions = Transaction.objects.filter(agent=agent)
-    payments = Payment.objects.filter(agent=agent)
+    try:
+        agent = Agent.objects.get(id=agent_id)
+        transactions = Transaction.objects.filter(agent=agent)
+        payments = Payment.objects.filter(agent=agent)
 
-    # Aggregate the total due and total paid, using 0.0 as the default if None
-    total_due = transactions.aggregate(total_due=Sum('total_price'))['total_due'] or 0.0
-    total_paid = payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
+        # Get the balance using the model's current_balance property
+        balance = agent.current_balance
 
-    # Calculate the balance
-    balance = total_due - total_paid
+        context = {
+            'agent': agent,
+            'transactions': transactions,
+            'payments': payments,
+            'balance': balance,
+        }
 
-    context = {
-        'agent': agent,
-        'transactions': transactions,
-        'payments': payments,
-        'balance': balance,
-    }
+        return render(request, 'agent_details.html', context)
 
-    return render(request, 'agent_details.html', context)
-
+    except Agent.DoesNotExist:
+        messages.error(request, "Agent not found.")
+        return redirect('agents')
 
 def distributed_goods(request):
-    # Fetch all agents and goods
     agents = Agent.objects.all()
     goods = Good.objects.filter(quantity_in_stock__gt=0)
 
@@ -126,43 +95,47 @@ def distributed_goods(request):
                 messages.error(request, "Insufficient stock for the selected good.")
                 return render(request, 'transaction_form.html', {'agents': agents, 'goods': goods})
 
-            # Use atomic transactions to ensure data consistency
-            with db_transaction.atomic():
-                # Create a new transaction
-                transaction = Transaction.objects.create(
-                    agent=agent,
-                    good=good,
-                    quantity_disbursed=quantity_disbursed,
-                    payment_status='due',  # Default status
-                )
+            # Create a new transaction
+            transaction = Transaction.objects.create(
+                agent=agent,
+                good=good,
+                quantity_disbursed=quantity_disbursed,
+                payment_status='due',
+            )
 
-                # Log successful transaction creation
-                messages.success(request, "Transaction recorded successfully!")
+            # Update stock
+            good.quantity_in_stock -= quantity_disbursed
+            good.save()
 
-                # Redirect to agents page or wherever you'd like
-                return redirect('agents')
+            messages.success(request, "Transaction recorded successfully!")
+            return redirect('agents')
 
-        except ValueError as e:
-            messages.error(request, f"Invalid input: {str(e)}")
+        except ValueError:
+            messages.error(request, "Invalid quantity entered.")
         except Exception as e:
-            # Log unexpected errors
-            messages.error(request, f"An error occurred: {str(e)}")
-            print(f"DEBUG: {e}")  # Optional: For debugging during development
+            messages.error(request, f"An unexpected error occurred: {str(e)}")
 
-    # Render the form for GET request
     return render(request, 'transaction_form.html', {'agents': agents, 'goods': goods})
 
-def payments(request):
-    return None
-
-
 def agent_balances(request):
-    return None
+    agents = Agent.objects.all()
+    agent_balance_data = []
 
+    # Loop through each agent and get their current balance using the model property
+    for agent in agents:
+        balance = agent.current_balance
+        agent_balance_data.append({'agent': agent, 'balance': balance})
+
+    return render(request, 'agent_balances.html', {'agent_balance_data': agent_balance_data})
+
+def payments(request):
+    payments_data = Payment.objects.all()
+    return render(request, 'payments.html', {'payments_data': payments_data})
 
 def agent_reports(request):
-    return None
-
+    # Add functionality for agent reports here (e.g., filtering by date range, agent type, etc.)
+    reports = Agent.objects.all()  # Placeholder for actual report generation
+    return render(request, 'agent_reports.html', {'reports': reports})
 
 def add_goods(request):
     if request.method == "POST":
@@ -174,18 +147,9 @@ def add_goods(request):
         form = GoodsForm()
     return render(request, 'goods_form.html', {'form': form})
 
-
 def agent(request):
     data = Agent.objects.all()
-
-    @property
-    def outstanding_balance(self):
-        total_due = self.transactions.aggregate(total_due=Sum('total_price'))['total_due'] or 0
-        total_paid = self.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0
-        return total_due - total_paid
-
     return render(request, 'agents.html', {'data': data})
-
 
 def add_agent(request):
     if request.method == 'POST':
@@ -197,11 +161,18 @@ def add_agent(request):
         form = AgentForm()
     return render(request, 'agents_form.html', {'form': form})
 
-
 def general_reports(request):
     return None
-
 
 def goods(request):
     data = Good.objects.all()
     return render(request, 'goods.html', {'data': data})
+
+def pie_chart(request):
+    return None
+
+def line_chart(request):
+    return None
+
+def bar_chart(request):
+    return None

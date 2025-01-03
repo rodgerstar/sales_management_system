@@ -6,7 +6,7 @@ from main.models import Agent, Good, Transaction
 class AgentForm(forms.ModelForm):
     class Meta:
         model = Agent
-        fields = ['name', 'phone', 'agent_number', 'email', 'address', 'payment_period_days']
+        fields = ['name', 'phone', 'agent_number', 'email', 'address', 'payment_period_days', 'agent_type', 'commission_rate']
 
 class GoodsForm(forms.ModelForm):
     class Meta:

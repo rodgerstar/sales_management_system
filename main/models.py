@@ -1,29 +1,30 @@
 from django.db import models
-from datetime import timedelta, datetime
-from django.db import transaction
-
+from datetime import timedelta
+from django.db import transaction as db_transaction
 from django.db.models import Sum
-
 from django.utils import timezone
-
-STATUS_CHOICES = [
-    ('partial', 'Partial'),
-    ('complete', 'Complete'),
-    ('pending', 'Pending'),
-    ('paid', 'Paid'),
-    ('overdue', 'Overdue'),
-]
+from django.core.exceptions import ValidationError
 
 class Agent(models.Model):
+    AGENT_TYPE_CHOICES = (
+        ('regular', 'Regular'),
+        ('commission', 'Commission'),
+    )
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, unique=True)
     agent_number = models.CharField(max_length=50, unique=True)
     address = models.CharField(max_length=255)
     payment_period_days = models.IntegerField(default=30)
+    agent_type = models.CharField(max_length=20, choices=AGENT_TYPE_CHOICES, default='regular')
+    commission_rate = models.FloatField(null=True, blank=True, help_text="Commission rate per 1000 sold")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Add balance field
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    def clean(self):
+        if self.agent_type == 'commission' and self.commission_rate is None:
+            raise ValidationError("Commission rate is required for commission-based agents.")
 
     def __str__(self):
         return f"{self.agent_number} - {self.name}"
@@ -33,6 +34,20 @@ class Agent(models.Model):
         verbose_name = "Agent"
         ordering = ['agent_number']
         db_table = 'agents'
+
+    @property
+    def current_balance(self):
+        """Calculates and returns the current balance for the agent."""
+        total_paid = self.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
+        total_due = self.transactions.filter(payment_status='due').aggregate(total_due=Sum('total_price'))['total_due'] or 0.0
+        commission_due = 0.0
+
+        if self.agent_type == 'commission' and self.commission_rate:
+            commission_due = sum(
+                t.total_price * (self.commission_rate / 1000) * (t.quantity_disbursed / 1) for t in self.transactions.filter(payment_status='paid')
+            )
+
+        return total_due - total_paid + commission_due
 
 
 class Good(models.Model):
@@ -47,10 +62,9 @@ class Good(models.Model):
 
     @property
     def stock_status(self):
-        # Set the thresholds for stock levels
-        if self.quantity_in_stock > (self.quantity_in_stock / 2):
+        if self.quantity_in_stock > 50:
             return "In Stock"
-        elif self.quantity_in_stock > (self.quantity_in_stock / 4):
+        elif self.quantity_in_stock > 10:
             return "Almost Out"
         else:
             return "Out of Stock"
@@ -62,54 +76,43 @@ class Good(models.Model):
         db_table = 'goods'
 
 
-
-
 class Transaction(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('due', 'Due'),
+        ('paid', 'Paid'),
+        ('late', 'Late'),
+    )
+
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='transactions')
     good = models.ForeignKey(Good, on_delete=models.CASCADE, related_name='transactions')
     quantity_disbursed = models.FloatField()
     total_price = models.FloatField(editable=False)
     due_date = models.DateTimeField(editable=False)
-    payment_status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='due')
+    payment_status = models.CharField(max_length=10, choices=PAYMENT_STATUS_CHOICES, default='due')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Calculate total price
         self.total_price = self.quantity_disbursed * self.good.price_per_g
-
-        # Set due date if not already set
         if not self.due_date:
             self.due_date = timezone.now() + timedelta(days=self.agent.payment_period_days)
 
-        # Ensure sufficient stock
-        if self.good.quantity_in_stock < self.quantity_disbursed:
-            raise ValueError("Insufficient stock to fulfill this transaction.")
+        with db_transaction.atomic():
+            if not self.pk:
+                if self.good.quantity_in_stock < self.quantity_disbursed:
+                    raise ValueError("Insufficient stock to fulfill this transaction.")
+                self.good.quantity_in_stock -= self.quantity_disbursed
+                self.good.save()
 
-        # Save the instance first to ensure it has a primary key
-        if not self.pk:  # Save only if this is a new transaction
             super().save(*args, **kwargs)
 
-        # Update payment status after calculating total paid
-        total_paid = self.agent.payments.filter(transaction=self).aggregate(total=Sum('amount_paid'))['total'] or 0
+        total_paid = self.payments.aggregate(total=Sum('amount_paid'))['total'] or 0
         if total_paid >= self.total_price:
             self.payment_status = 'paid'
         else:
-            # Use timezone.now() to get a timezone-aware current date
-            current_date = timezone.now()
+            self.payment_status = 'late' if timezone.now() > self.due_date else 'due'
 
-            # Ensure self.due_date is timezone-aware
-            if timezone.is_naive(self.due_date):
-                self.due_date = timezone.make_aware(self.due_date)
-
-            # Perform the comparison of timezone-aware datetimes
-            self.payment_status = 'late' if current_date > self.due_date else 'due'
-
-        # Update stock and save transaction atomically
-        with transaction.atomic():
-            self.good.quantity_in_stock -= self.quantity_disbursed
-            self.good.save()
-            super().save(*args, **kwargs)  # Save again to update payment_status
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Transaction {self.id}: {self.agent.name} - {self.good.name} ({self.payment_status})"
@@ -120,7 +123,14 @@ class Transaction(models.Model):
         ordering = ['agent', 'good']
         db_table = 'transactions'
 
+
 class Payment(models.Model):
+    PAYMENT_STATUS_CHOICES = (
+        ('due', 'Due'),
+        ('paid', 'Paid'),
+        ('late', 'Late'),
+    )
+
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='payments')
     transaction = models.ForeignKey(
         Transaction,
@@ -128,22 +138,47 @@ class Payment(models.Model):
         null=True,
         blank=True,
         related_name='payments'
-    )  # Optional: Can associate payment with a specific transaction
+    )
     amount_paid = models.FloatField()
     date_paid = models.DateTimeField(auto_now_add=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Save payment first
         super().save(*args, **kwargs)
 
-        # Update transaction status if linked and payment is sufficient
         if self.transaction:
-            total_paid = sum(payment.amount_paid for payment in self.transaction.payments.all())
+            total_paid = self.transaction.payments.aggregate(total=Sum('amount_paid'))['total'] or 0
             if total_paid >= self.transaction.total_price:
                 self.transaction.payment_status = 'paid'
-                self.transaction.save()
+            else:
+                self.transaction.payment_status = 'due'
+            self.transaction.save()
+
+        # Update agent balance after payment
+        self.update_agent_balance()
+
+    def update_agent_balance(self):
+        """Update agent balance after payment and transaction status changes."""
+        agent = self.agent
+
+        # Total paid and total due are calculated for the agent
+        total_paid = agent.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
+        total_due = agent.transactions.filter(payment_status='due').aggregate(total_due=Sum('total_price'))['total_due'] or 0.0
+
+        # Commission calculation for commission-based agents
+        commission_due = 0.0
+        if agent.agent_type == 'commission' and agent.commission_rate:
+            commission_due = sum(
+                t.total_price * (agent.commission_rate / 1000) * (t.quantity_disbursed / 1) for t in agent.transactions.filter(payment_status='paid')
+            )
+
+        # Calculate the new balance
+        new_balance = total_due - total_paid + commission_due
+
+        # Save the updated balance
+        agent.balance = new_balance
+        agent.save()
 
     def __str__(self):
         return f"Payment of {self.amount_paid} by {self.agent.name} on {self.date_paid}"
@@ -153,5 +188,3 @@ class Payment(models.Model):
         verbose_name = "Payment"
         ordering = ['-date_paid']
         db_table = 'payments'
-
-
