@@ -32,7 +32,7 @@
                             <td>{{ agent.name }}</td>
                             <td>{{ agent.phone }}</td>
                             <td>{{ agent.email }}</td>
-                            <td>{{ agent.total_outstanding|default:"0.00" }}</td>
+                            <td>{{ agent.balance|default:"0.00" }}</td>
                         </tr>
                     {% endfor %}
                     </tbody>

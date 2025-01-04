@@ -111,7 +111,7 @@ def distributed_goods(request):
             good.save()
 
             messages.success(request, "Transaction recorded successfully!")
-            return redirect('agents')
+            return redirect('agent_details', agent_id=agent.id)
 
         except ValueError:
             messages.error(request, "Invalid quantity entered.")
