@@ -37,17 +37,16 @@ class Agent(models.Model):
 
     @property
     def current_balance(self):
-        """Calculates and returns the current balance for the agent."""
+        """Calculates and returns the current balance the agent owes to the business."""
+
         total_paid = self.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
-        total_due = self.transactions.filter(payment_status='due').aggregate(total_due=Sum('total_price'))['total_due'] or 0.0
-        commission_due = 0.0
+        total_disbursed = self.transactions.aggregate(total_disbursed=Sum('total_price'))['total_disbursed'] or 0.0
 
         if self.agent_type == 'commission' and self.commission_rate:
-            commission_due = sum(
-                t.total_price * (self.commission_rate / 1000) * (t.quantity_disbursed / 1) for t in self.transactions.filter(payment_status='paid')
-            )
+            commission = (total_disbursed / 1000) * self.commission_rate
+            return total_disbursed - commission - total_paid
+        return total_disbursed - total_paid
 
-        return total_due - total_paid + commission_due
 
 
 class Good(models.Model):
@@ -133,7 +132,7 @@ class Payment(models.Model):
 
     agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='payments')
     transaction = models.ForeignKey(
-        Transaction,
+        'Transaction',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -155,28 +154,20 @@ class Payment(models.Model):
                 self.transaction.payment_status = 'due'
             self.transaction.save()
 
-        # Update agent balance after payment
         self.update_agent_balance()
 
     def update_agent_balance(self):
         """Update agent balance after payment and transaction status changes."""
         agent = self.agent
 
-        # Total paid and total due are calculated for the agent
         total_paid = agent.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
-        total_due = agent.transactions.filter(payment_status='due').aggregate(total_due=Sum('total_price'))['total_due'] or 0.0
+        total_disbursed = agent.transactions.aggregate(total_disbursed=Sum('total_price'))['total_disbursed'] or 0.0
 
-        # Commission calculation for commission-based agents
-        commission_due = 0.0
+        commission = 0.0
         if agent.agent_type == 'commission' and agent.commission_rate:
-            commission_due = sum(
-                t.total_price * (agent.commission_rate / 1000) * (t.quantity_disbursed / 1) for t in agent.transactions.filter(payment_status='paid')
-            )
+            commission = (total_disbursed / 1000) * agent.commission_rate
 
-        # Calculate the new balance
-        new_balance = total_due - total_paid + commission_due
-
-        # Save the updated balance
+        new_balance = total_disbursed - commission - total_paid
         agent.balance = new_balance
         agent.save()
 
