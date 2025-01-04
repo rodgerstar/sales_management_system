@@ -92,10 +92,14 @@ class Transaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Calculate total price of the transaction
         self.total_price = self.quantity_disbursed * self.good.price_per_g
+
+        # Set due date if not already set
         if not self.due_date:
             self.due_date = timezone.now() + timedelta(days=self.agent.payment_period_days)
 
+        # Ensure stock is sufficient for the transaction
         with db_transaction.atomic():
             if not self.pk:
                 if self.good.quantity_in_stock < self.quantity_disbursed:
@@ -105,8 +109,20 @@ class Transaction(models.Model):
 
             super().save(*args, **kwargs)
 
+        # Calculate total payments for this transaction
         total_paid = self.payments.aggregate(total=Sum('amount_paid'))['total'] or 0
-        if total_paid >= self.total_price:
+
+        # Determine payment status based on agent type
+        if self.agent.agent_type == 'commission' and self.agent.commission_rate:
+            # Calculate commission for commission agents
+            commission = (self.total_price / 1000) * self.agent.commission_rate
+            balance_due = self.total_price - commission
+        else:
+            # Regular agents: Balance is simply the total price
+            balance_due = self.total_price
+
+        # Update payment status
+        if total_paid >= balance_due:
             self.payment_status = 'paid'
         else:
             self.payment_status = 'late' if timezone.now() > self.due_date else 'due'
@@ -121,7 +137,6 @@ class Transaction(models.Model):
         verbose_name = "Transaction"
         ordering = ['agent', 'good']
         db_table = 'transactions'
-
 
 class Payment(models.Model):
     PAYMENT_STATUS_CHOICES = (
