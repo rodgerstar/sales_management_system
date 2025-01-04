@@ -137,7 +137,12 @@ def outstanding_balances(request):
         'good__name', 'agent__name'
     ).annotate(
         total_quantity=Sum('quantity_disbursed'),
-        total_balance=Sum(F('total_price') - F('payments__amount_paid'))
+        total_balance=Sum(
+            ExpressionWrapper(
+                F('total_price') - F('payments__amount_paid'),
+                output_field=DecimalField()
+            )
+        )
     )
 
     context = {
@@ -145,6 +150,7 @@ def outstanding_balances(request):
         'outstanding_goods': outstanding_goods,
     }
     return render(request, 'outstanding.html', context)
+
 
 def agent_reports(request):
     # Add functionality for agent reports here (e.g., filtering by date range, agent type, etc.)
@@ -190,3 +196,4 @@ def line_chart(request):
 
 def bar_chart(request):
     return None
+
