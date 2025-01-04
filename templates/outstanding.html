@@ -1,0 +1,77 @@
+{% extends 'master.html' %}
+{% load static %}
+
+{% block title %}
+    <title>Outstanding Balances</title>
+{% endblock %}
+
+{% block extra_css %}
+    <link href="{% static 'vendor/datatables/dataTables.bootstrap4.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <div class="card border-0 shadow rounded-lg border-left-success">
+            <div class="card-header bg-gradient-success text-white text-center">
+                <h4 class="mb-0">Outstanding Balances</h4>
+            </div>
+            <div class="card-body">
+                <h3>Agents' Outstanding Balances</h3>
+                <table class="table table-bordered table-striped w-100">
+                    <thead>
+                    <tr>
+                        <th>Agent Name</th>
+                        <th>Phone</th>
+                        <th>Email</th>
+                        <th>Total Outstanding Balance</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for agent in agents %}
+                        <tr>
+                            <td>{{ agent.name }}</td>
+                            <td>{{ agent.phone }}</td>
+                            <td>{{ agent.email }}</td>
+                            <td>{{ agent.total_outstanding|default:"0.00" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                <h3>Goods Outstanding Balances</h3>
+                <table class="table table-bordered table-striped w-100">
+                    <thead>
+                    <tr>
+                        <th>Good Name</th>
+                        <th>Agent Name</th>
+                        <th>Total Quantity</th>
+                        <th>Total Outstanding Balance</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for good in outstanding_goods %}
+                        <tr>
+                            <td>{{ good.good__name }}</td>
+                            <td>{{ good.agent__name }}</td>
+                            <td>{{ good.total_quantity }}</td>
+                            <td>{{ good.total_balance|default:"0.00" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                <button type="button" class="btn btn-success mt-3 float-right" onclick="window.location.href='{% url 'agent' %}'">Back</button>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <!-- Page level plugins -->
+    <script src="{% static 'vendor/datatables/jquery.dataTables.min.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.min.js' %}"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+{% endblock %}

@@ -1,9 +1,12 @@
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Sum
+from django.shortcuts import  redirect, get_object_or_404
 from django.utils import timezone
 from main.app_forms import AgentForm, GoodsForm
-from .models import Agent, Transaction, Payment, Good
+from .models import  Payment, Good
+from django.shortcuts import render
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from .models import Agent, Transaction
+from django.db.models import Q
 
 # Create your views here.
 def dashboard(request):
@@ -117,20 +120,31 @@ def distributed_goods(request):
 
     return render(request, 'transaction_form.html', {'agents': agents, 'goods': goods})
 
-def agent_balances(request):
-    agents = Agent.objects.all()
-    agent_balance_data = []
+def outstanding_balances(request):
+    # Annotate agents with outstanding balances and transactions
+    agents = Agent.objects.annotate(
+        total_outstanding=Sum(
+            ExpressionWrapper(
+                F('transactions__total_price') - F('transactions__payments__amount_paid'),
+                output_field=DecimalField()
+            ),
+            filter=~Q(transactions__payment_status='paid')
+        )
+    ).filter(total_outstanding__gt=0)
 
-    # Loop through each agent and get their current balance using the model property
-    for agent in agents:
-        balance = agent.current_balance
-        agent_balance_data.append({'agent': agent, 'balance': balance})
+    # Fetch outstanding transactions grouped by goods
+    outstanding_goods = Transaction.objects.filter(payment_status__in=['due', 'late']).values(
+        'good__name', 'agent__name'
+    ).annotate(
+        total_quantity=Sum('quantity_disbursed'),
+        total_balance=Sum(F('total_price') - F('payments__amount_paid'))
+    )
 
-    return render(request, 'agent_balances.html', {'agent_balance_data': agent_balance_data})
-
-def payments(request):
-    payments_data = Payment.objects.all()
-    return render(request, 'payments.html', {'payments_data': payments_data})
+    context = {
+        'agents': agents,
+        'outstanding_goods': outstanding_goods,
+    }
+    return render(request, 'outstanding.html', context)
 
 def agent_reports(request):
     # Add functionality for agent reports here (e.g., filtering by date range, agent type, etc.)
