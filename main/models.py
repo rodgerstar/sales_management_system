@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 from datetime import timedelta
 from django.db import transaction as db_transaction
@@ -10,6 +11,8 @@ class Agent(models.Model):
         ('regular', 'Regular'),
         ('commission', 'Commission'),
     )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='agent_profile', null=True, blank=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, unique=True)
@@ -38,7 +41,6 @@ class Agent(models.Model):
     @property
     def current_balance(self):
         """Calculates and returns the current balance the agent owes to the business."""
-
         total_paid = self.payments.aggregate(total_paid=Sum('amount_paid'))['total_paid'] or 0.0
         total_disbursed = self.transactions.aggregate(total_disbursed=Sum('total_price'))['total_disbursed'] or 0.0
 
@@ -46,7 +48,6 @@ class Agent(models.Model):
             commission = (total_disbursed / 1000) * self.commission_rate
             return total_disbursed - commission - total_paid
         return total_disbursed - total_paid
-
 
 
 class Good(models.Model):

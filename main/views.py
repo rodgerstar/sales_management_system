@@ -1,4 +1,6 @@
 from django.contrib import messages
+from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import  redirect, get_object_or_404
 from django.utils import timezone
 from main.app_forms import AgentForm, GoodsForm
@@ -7,6 +9,9 @@ from django.shortcuts import render
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from .models import Agent, Transaction
 from django.db.models import Q
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+
+
 
 # Create your views here.
 def dashboard(request):
@@ -196,4 +201,84 @@ def line_chart(request):
 
 def bar_chart(request):
     return None
+
+
+# Sign-up view to create an agent's account
+def agent_signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        agent_form = AgentForm(request.POST)
+
+        if form.is_valid() and agent_form.is_valid():
+            # Create the user (email and password)
+            user = form.save()
+            user.email = form.cleaned_data['username']  # Set the username as email
+            user.set_password(form.cleaned_data['password1'])  # Set the password
+            user.save()
+
+            # Now, create the agent profile
+            agent = agent_form.save(commit=False)
+            agent.user = user  # Link the agent with the created user
+            agent.save()
+
+            messages.success(request, f"Agent {agent.name} successfully registered!")
+            return redirect('login')
+        else:
+            messages.error(request, "There was an issue with your sign-up form. Please check your inputs.")
+    else:
+        form = UserCreationForm()
+        agent_form = AgentForm()
+
+    return render(request, 'agent_login.html', {'form': form, 'agent_form': agent_form})
+
+
+# Login view for the agent
+def login_page(request):
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+
+        if form.is_valid():
+            email = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+
+            # Authenticate the user using email (username)
+            user = authenticate(request, username=email, password=password)
+
+            if user is not None:
+                login(request, user)
+                messages.success(request, "Logged in successfully!")
+
+                if user.is_superuser:
+                    return redirect('dashboard')  # Redirect to the main dashboard for superuser
+                else:
+                    return redirect('agent_dashboard')  # Redirect to agent's dashboard for agents
+            else:
+                messages.error(request, "Invalid credentials. Please try again.")
+        else:
+            messages.error(request, "Invalid form input.")
+
+    else:
+        form = AuthenticationForm()
+
+    return render(request, 'agent_login.html', {'form': form})
+
+
+# Logout view
+def agent_logout(request):
+    logout(request)
+    messages.success(request, "Logged out successfully!")
+    return redirect('login')
+
+
+# This view is where an agent's profile can be displayed after login
+def agent_dashboard(request):
+    if not request.user.is_authenticated:
+        return redirect('login')  # Redirect to login if not authenticated
+
+    agent = request.user.agent_profile  # Access the agent's profile via the related name `agent_profile`
+
+    return render(request, 'agent_dashboard.html', {'agent': agent})
+
+# You may also include any views to manage or update the agent's profile here
+
 

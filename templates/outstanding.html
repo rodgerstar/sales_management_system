@@ -12,15 +12,15 @@
 
 {% block content %}
     <div class="container">
-        <div class="card border-0 shadow rounded-lg border-left-success">
-            <div class="card-header bg-gradient-success text-white text-center">
-                <h4 class="mb-0">Outstanding Balances</h4>
+        <div class="card border-0 shadow rounded-lg border-left-dark">
+            <div class="card-header bg-white text-success text-capitalize ">
+                <h4 class="mb-0">OUTSTANDING BALANCES:</h4>
             </div>
             <div class="card-body">
                 <!-- Start of grid layout -->
                 <div class="row">
                     <!-- Left side: Agents' Outstanding Balances -->
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card border-0 shadow mb-4 border-bottom-gradient-info">
                             <div class="card-header bg-gradient-info text-white text-center">
                                 <h5>Agents' Outstanding Balances</h5>
@@ -51,7 +51,7 @@
                     </div>
 
                     <!-- Right side: Goods Outstanding Balances -->
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <div class="card border-0 shadow mb-4 border-bottom-warning">
                             <div class="card-header bg-gradient-warning text-white text-center">
                                 <h5>Goods Outstanding Balances</h5>
@@ -63,8 +63,8 @@
                                             <th>Good Name</th>
                                             <th>Agent Name</th>
                                             <th>Total Quantity</th>
-                                            <th>Amount In Stock</th>
-                                            <th>Status</th>
+{#                                            <th>Amount In Stock</th>#}
+{#                                            <th>Status</th>#}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -73,8 +73,8 @@
                                             <td>{{ good.good__name }}</td>
                                             <td>{{ good.agent__name }}</td>
                                             <td>{{ good.total_quantity }}</td>
-                                            <td>{{ good.quantity_in_stock }}</td>
-                                            <td>{{ good.stock_status }}</td>
+{#                                            <td>{{ good.quantity_in_stock }}</td>#}
+{#                                            <td>{{ good.stock_status }}</td>#}
                                         </tr>
                                     {% endfor %}
                                     </tbody>
