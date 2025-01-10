@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import  redirect, get_object_or_404
 from django.utils import timezone
 from main.app_forms import AgentForm, GoodsForm, CreateUserForm
-from .models import  Payment, Good
+from .models import  Payment, Good, Agent
 from django.shortcuts import render
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from .models import Agent, Transaction
@@ -249,11 +249,16 @@ def agent_signup(request):
             if form.is_valid():
                 user = form.save()
 
+                # Ensure Agent is the correct model name
+                from .models import Agent
+
                 group = Group.objects.get(name='agent')
                 user.groups.add(group)
+                Agent.objects.create(
+                    user=user,
+                )
                 messages.success(request, "Your account has been created!")
                 return redirect('login')
-                  # Replace 'success_page' with your actual URL name
 
         context = {'form': form}
         return render(request, 'agent_register.html', context)
