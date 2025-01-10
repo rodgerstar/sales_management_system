@@ -1,22 +1,27 @@
 from django.contrib import messages
 from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import  redirect, get_object_or_404
 from django.utils import timezone
-from main.app_forms import AgentForm, GoodsForm
+from main.app_forms import AgentForm, GoodsForm, CreateUserForm
 from .models import  Payment, Good
 from django.shortcuts import render
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from .models import Agent, Transaction
 from django.db.models import Q
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import  AuthenticationForm
+from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.forms import UserCreationForm
+
 
 
 
 # Create your views here.
+@login_required(login_url='login')
 def dashboard(request):
     return render(request, 'dashboard.html')
 
+@login_required(login_url='login')
 def process_payment(request):
     agents = Agent.objects.all()
     transactions = Transaction.objects.filter(payment_status__in=['due', 'late'])
@@ -59,6 +64,7 @@ def process_payment(request):
 
     return render(request, 'payment_form.html', {'agents': agents, 'transactions': transactions})
 
+@login_required(login_url='login')
 def agent_details(request, agent_id):
     try:
         agent = Agent.objects.get(id=agent_id)
@@ -81,6 +87,7 @@ def agent_details(request, agent_id):
         messages.error(request, "Agent not found.")
         return redirect('agents')
 
+@login_required(login_url='login')
 def distributed_goods(request):
     agents = Agent.objects.all()
     goods = Good.objects.filter(quantity_in_stock__gt=0)
@@ -125,6 +132,7 @@ def distributed_goods(request):
 
     return render(request, 'transaction_form.html', {'agents': agents, 'goods': goods})
 
+@login_required(login_url='login')
 def outstanding_balances(request):
     # Annotate agents with outstanding balances and transactions
     agents = Agent.objects.annotate(
@@ -156,12 +164,13 @@ def outstanding_balances(request):
     }
     return render(request, 'outstanding.html', context)
 
-
+@login_required(login_url='login')
 def agent_reports(request):
     # Add functionality for agent reports here (e.g., filtering by date range, agent type, etc.)
     reports = Agent.objects.all()  # Placeholder for actual report generation
     return render(request, 'agent_reports.html', {'reports': reports})
 
+@login_required(login_url='login')
 def add_goods(request):
     if request.method == "POST":
         form = GoodsForm(request.POST, request.FILES)
@@ -172,10 +181,11 @@ def add_goods(request):
         form = GoodsForm()
     return render(request, 'goods_form.html', {'form': form})
 
+@login_required(login_url='login')
 def agent(request):
     data = Agent.objects.all()
     return render(request, 'agents.html', {'data': data})
-
+@login_required(login_url='login')
 def add_agent(request):
     if request.method == 'POST':
         form = AgentForm(request.POST)
@@ -193,92 +203,74 @@ def goods(request):
     data = Good.objects.all()
     return render(request, 'goods.html', {'data': data})
 
+@login_required(login_url='login')
 def pie_chart(request):
     return None
 
+@login_required(login_url='login')
 def line_chart(request):
     return None
 
+@login_required(login_url='login')
 def bar_chart(request):
     return None
 
 
 # Sign-up view to create an agent's account
+
+
 def agent_signup(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        agent_form = AgentForm(request.POST)
-
-        if form.is_valid() and agent_form.is_valid():
-            # Create the user (email and password)
-            user = form.save()
-            user.email = form.cleaned_data['username']  # Set the username as email
-            user.set_password(form.cleaned_data['password1'])  # Set the password
-            user.save()
-
-            # Now, create the agent profile
-            agent = agent_form.save(commit=False)
-            agent.user = user  # Link the agent with the created user
-            agent.save()
-
-            messages.success(request, f"Agent {agent.name} successfully registered!")
-            return redirect('login')
-        else:
-            messages.error(request, "There was an issue with your sign-up form. Please check your inputs.")
+    if request.user.is_authenticated:
+        return redirect('dashboard')
     else:
-        form = UserCreationForm()
-        agent_form = AgentForm()
+        form = CreateUserForm()
 
-    return render(request, 'agent_login.html', {'form': form, 'agent_form': agent_form})
+        if request.method == 'POST':
+            form = CreateUserForm(request.POST)
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Your account has been created!")
+                return redirect('login')
+                  # Replace 'success_page' with your actual URL name
+
+        context = {'form': form}
+        return render(request, 'agent_register.html', context)
 
 
 # Login view for the agent
 def login_page(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    else:
+        if request.method == 'POST':
+            username = request.POST.get('username')
+            password = request.POST.get('password')
 
-        if form.is_valid():
-            email = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-
-            # Authenticate the user using email (username)
-            user = authenticate(request, username=email, password=password)
+            user = authenticate(request, username=username, password=password)
 
             if user is not None:
                 login(request, user)
-                messages.success(request, "Logged in successfully!")
-
-                if user.is_superuser:
-                    return redirect('dashboard')  # Redirect to the main dashboard for superuser
-                else:
-                    return redirect('agent_dashboard')  # Redirect to agent's dashboard for agents
+                return redirect('dashboard')
             else:
-                messages.error(request, "Invalid credentials. Please try again.")
-        else:
-            messages.error(request, "Invalid form input.")
-
-    else:
-        form = AuthenticationForm()
-
-    return render(request, 'agent_login.html', {'form': form})
-
-
+                messages.error(request, "Invalid username or password.")
+        context = {}
+        return render(request, 'agent_login.html', context)
 # Logout view
-def agent_logout(request):
+@login_required(login_url='login')
+def user_logout(request):
     logout(request)
     messages.success(request, "Logged out successfully!")
     return redirect('login')
 
 
 # This view is where an agent's profile can be displayed after login
+
+@login_required(login_url='login')
 def agent_dashboard(request):
     if not request.user.is_authenticated:
         return redirect('login')  # Redirect to login if not authenticated
 
-    agent = request.user.agent_profile  # Access the agent's profile via the related name `agent_profile`
+    # Ensure the user has an agent profile
+    agent = get_object_or_404(Agent, user=request.user)
 
     return render(request, 'agent_dashboard.html', {'agent': agent})
-
-# You may also include any views to manage or update the agent's profile here
-
-

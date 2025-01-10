@@ -11,7 +11,7 @@ class AgentAdmin(admin.ModelAdmin):
 # Customizing the admin interface for Payment model
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ('agent', 'transaction', 'amount_paid', 'date_paid')  # Adjust these fields as necessary
-    search_fields = ('agent')  # Search by agent name or transaction ID
+     # Search by agent name or transaction ID
     list_filter = ('date_paid',)  # Enable filtering by payment date
     ordering = ('-date_paid',)  # Default ordering by payment date (descending)
 
