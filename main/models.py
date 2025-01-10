@@ -5,6 +5,8 @@ from django.db import transaction as db_transaction
 from django.db.models import Sum
 from django.utils import timezone
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 
 class Agent(models.Model):
     AGENT_TYPE_CHOICES = (

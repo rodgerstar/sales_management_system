@@ -25,9 +25,12 @@ urlpatterns = [
     path('agent/dashboard/', views.agent_dashboard, name='agent_dashboard'),
 
     path('payment/', views.process_payment, name='process_payment'),
+
+    path('make/payment/<int:transaction_id>', views.make_payment, name='make_payment'),
     path('agent/<int:agent_id>/', views.agent_details, name='agent_details'),
     path('goods/distributed', views.distributed_goods, name='distributed_goods'),
     path('add/goods', views.add_goods, name='add_goods'),
+    path('agent/dashboard/payment', views.agent_dashboard_payment, name='agent_dashboard_payment'),
     path('goods', views.goods, name='goods'),
     path('agent', views.agent, name='agent'),
     path('add/agent', views.add_agent, name='add_agent'),

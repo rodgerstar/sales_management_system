@@ -55,6 +55,9 @@
         <hr class="sidebar-divider my-0">
 
         <!-- Nav Item - Dashboard -->
+        
+        {% if request.user.is_staff %}
+        
         <li class="nav-item">
             <a class="nav-link" href="{% url 'dashboard' %}">
                 <i class="fas fa-fw fa-tachometer-alt"></i>
@@ -126,10 +129,13 @@
                 <span>Outstanding Balances</span>
             </a>
         </li>
+            
+           <!-- Divider -->
+        <hr class="sidebar-divider d-none d-md-block"> 
+        {% endif %}
 
 
-        <!-- Divider -->
-        <hr class="sidebar-divider d-none d-md-block">
+        
 
         <!-- Sidebar Toggler (Sidebar) -->
         <div class="text-center d-none d-md-inline">
