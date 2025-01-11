@@ -11,14 +11,11 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
 import os
-
 from django.contrib import messages
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -30,7 +27,6 @@ SECRET_KEY = 'django-insecure-f$6yupp515w@z!kcntpo-cjb8601ekqe!h1$=!9n77ucdlo)n1
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
-
 
 # Application definition
 
@@ -62,8 +58,7 @@ ROOT_URLCONF = 'salesMs.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -78,21 +73,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'salesMs.wsgi.application'
 
-
 # Database
+# Use SQLite for local development
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'sales_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # This will create an SQLite file in your project folder
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -112,7 +102,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -123,7 +112,6 @@ TIME_ZONE = 'Africa/Nairobi'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -156,14 +144,12 @@ MPESA_ENVIRONMENT = 'sandbox'
 MPESA_CONSUMER_KEY = os.getenv("MPESA_CONSUMER_KEY")
 MPESA_CONSUMER_SECRET = os.getenv("MPESA_CONSUMER_SECRET")
 
-#Shortcode to use for transactions. For sandbox  use the Shortcode 1 provided on test credentials page
-
+# Shortcode to use for transactions. For sandbox use the Shortcode 1 provided on test credentials page
 MPESA_SHORTCODE = '174379'
 
 # Shortcode to use for Lipa na MPESA Online (MPESA Express) transactions
 # This is only used on sandbox, do not set this variable in production
 # For sandbox use the Lipa na MPESA Online Shorcode provided on test credentials page
-
 MPESA_EXPRESS_SHORTCODE = '174379'
 
 # Type of shortcode
@@ -180,11 +166,9 @@ MPESA_SHORTCODE_TYPE = 'paybill'
 MPESA_PASSKEY = os.getenv("MPESA_PASSKEY")
 
 # Username for initiator (to be used in B2C, B2B, AccountBalance and TransactionStatusQuery Transactions)
-
 MPESA_INITIATOR_USERNAME = 'initiator_username'
 
 # Plaintext password for initiator (to be used in B2C, B2B, AccountBalance and TransactionStatusQuery Transactions)
-
 MPESA_INITIATOR_SECURITY_CREDENTIAL = 'initiator_security_credential'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
