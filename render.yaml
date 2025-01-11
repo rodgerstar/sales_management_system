@@ -1,8 +1,9 @@
 services:
   - type: web
-    name: main
+    name: salesMs
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: python manage.py runserver
     region: oregon
     plan: free
+
