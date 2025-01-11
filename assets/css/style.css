@@ -1,0 +1,60 @@
+/* Custom styles for the cards */
+.card-custom {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header-custom {
+    background: forestgreen;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 15px;
+    font-size: 1.2rem;
+}
+
+.card-body-custom {
+    padding: 20px;
+    background-color: #fafafa;
+}
+
+.table-custom th {
+    background-color: #f1f1f1;
+    color: #333;
+}
+
+.table-custom td {
+    background-color: #fff;
+}
+
+.table-custom {
+    margin-top: 15px;
+}
+
+.card-custom .btn {
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.card-custom .btn:hover {
+    background-color: #45a049;
+}
+
+.navbar-nav.sidebar.sidebar-dark.accordion {
+  /* Your styles here */
+    background-color: forestgreen;
+}
+
+
+/* Responsive card layout */
+@media (max-width: 768px) {
+    .card-custom {
+        margin-bottom: 15px;
+    }
+}
