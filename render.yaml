@@ -4,6 +4,6 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python manage.py runserver
-    region: kenya
+    region: oregon
     plan: free
 
