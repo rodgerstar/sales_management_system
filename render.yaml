@@ -3,7 +3,6 @@ services:
     name: salesMs
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py runserver
+    startCommand: gunicorn salesMs.wsgi:application --bind 0.0.0.0:$PORT
     region: oregon
     plan: free
-
