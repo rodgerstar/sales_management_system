@@ -81,10 +81,15 @@ WSGI_APPLICATION = 'salesMs.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',  # This will create an SQLite file in your project folder
+        'ENGINE': 'django.db.backends.mysql',  # Use the MySQL backend
+        'NAME': 'sales_db',                   # Database name
+        'USER': 'root',            # Replace with your MySQL username
+        'PASSWORD': '',    # Replace with your MySQL password
+        'HOST': 'localhost',                  # Set to '127.0.0.1' if hosted locally
+        'PORT': '3306',                       # Default MySQL port
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

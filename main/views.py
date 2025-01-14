@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
 from django.shortcuts import  redirect, get_object_or_404
 from django.utils import timezone
 from main.app_forms import AgentForm, GoodsForm, CreateUserForm
-from .models import  Payment, Good, Agent
+from .models import  Payment, Good
 from django.shortcuts import render
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from .models import Agent, Transaction
@@ -239,50 +240,43 @@ def bar_chart(request):
 
 @unauthenticated_user
 def agent_signup(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    else:
-        form = CreateUserForm()
+    form = CreateUserForm()
 
-        if request.method == 'POST':
-            form = CreateUserForm(request.POST)
-            if form.is_valid():
-                user = form.save()
+    if request.method == 'POST':
+        form = CreateUserForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            group = Group.objects.get(name='agent')
+            user.groups.add(group)
+            Agent.objects.create(user=user)
+            messages.success(request, "Your account has been created!")
+            return redirect('login')
 
-                # Ensure Agent is the correct model name
-                from .models import Agent
-
-                group = Group.objects.get(name='agent')
-                user.groups.add(group)
-                Agent.objects.create(
-                    user=user,
-                )
-                messages.success(request, "Your account has been created!")
-                return redirect('login')
-
-        context = {'form': form}
-        return render(request, 'agent_register.html', context)
-
-
+    context = {'form': form}
+    return render(request, 'agent_register.html', context)
 
 # Login view for the agent
 @unauthenticated_user
 def login_page(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
 
-        if request.method == 'POST':
-            username = request.POST.get('username')
-            password = request.POST.get('password')
-
-            user = authenticate(request, username=username, password=password)
-
-            if user is not None:
-                login(request, user)
-                return redirect('dashboard')
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            if user.groups.filter(name='agent').exists():
+                return redirect('agent_dashboard')
+            elif user.groups.filter(name='admin').exists():
+                return redirect('admin_dashboard')
             else:
-                messages.error(request, "Invalid username or password.")
-        context = {}
-        return render(request, 'agent_login.html', context)
-# Logout view
+                return HttpResponse('Unauthorized access.', status=403)
+        else:
+            messages.error(request, "Invalid username or password.")
+
+    return render(request, 'agent_login.html')
+
+
 @login_required(login_url='login')
 def user_logout(request):
     logout(request)
@@ -293,31 +287,25 @@ def user_logout(request):
 # This view is where an agent's profile can be displayed after login
 
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['Agent'])
+@allowed_users(allowed_roles=['agent'])
 def agent_dashboard(request):
-    try:
-        # Retrieve the agent linked to the current user
-        agent = Agent.objects.get(user=request.user)
-
-        # Get the agent's transactions (exclude fully paid ones)
-        transactions = Transaction.objects.filter(agent=agent).exclude(payment_status='paid')
-
-        # Get payment history for the agent
-        payments = Payment.objects.filter(agent=agent)
-
-        context = {
-            'agent': agent,
-            'transactions': transactions,
-            'payments': payments,
-        }
-        return render(request, 'agent_dashboard.html', context)
-
-    except Agent.DoesNotExist:
-        # Redirect to a profile creation page or show an error if no agent exists
+    agent = Agent.objects.filter(user=request.user).first()
+    if not agent:
         messages.error(request, "Agent profile not found. Please contact support.")
         return redirect('dashboard')
+
+    transactions = Transaction.objects.filter(agent=agent).exclude(payment_status='paid')
+    payments = Payment.objects.filter(agent=agent)
+
+    context = {
+        'agent': agent,
+        'transactions': transactions,
+        'payments': payments,
+    }
+    return render(request, 'agent_dashboard.html', context)
+
 @login_required(login_url='login')
-@allowed_users(allowed_roles=['Agent'])
+@allowed_users(allowed_roles=['agent'])
 def make_payment(request, transaction_id):
     try:
         # Get the agent linked to the current user
