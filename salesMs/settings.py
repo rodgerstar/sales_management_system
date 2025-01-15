@@ -81,12 +81,12 @@ WSGI_APPLICATION = 'salesMs.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',  # Use the MySQL backend
+        'ENGINE': 'django.db.backends.postgresql',  # Use the MySQL backend
         'NAME': 'sales_db',                   # Database name
-        'USER': 'root',            # Replace with your MySQL username
+        'USER': 'postgres',            # Replace with your MySQL username
         'PASSWORD': '',    # Replace with your MySQL password
         'HOST': 'localhost',                  # Set to '127.0.0.1' if hosted locally
-        'PORT': '3306',                       # Default MySQL port
+        'PORT': '5432',                       # Default MySQL port
     }
 }
 
@@ -181,3 +181,10 @@ MPESA_INITIATOR_SECURITY_CREDENTIAL = 'initiator_security_credential'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = 'bootstrap5'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = '587'
+EMAIL_USE_TLS = 'True'
+EMAIL_HOST_USER = 'rodgerstarrodgers@gmail.com'
+EMAIL_HOST_PASSWORD = 'Badgal2024.'
